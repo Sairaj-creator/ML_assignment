@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL=sqlite:///./app.db
+      - JWT_SECRET=dev_secret_key_change_me
+      - JWT_ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=60
+      - MAX_PIXELS=8000000
+      - RATE_LIMIT_PER_MINUTE=100
+      - MOCK_INFERENCE=true
+      - DEBUG=true

@@ -1,0 +1,37 @@
+# W9 FIX: exclude secrets, local state, and bulky dev artifacts from the Docker image
+
+# Python caches
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Secrets — NEVER bake these into the image
+.env
+*.env
+
+# Local SQLite database
+*.db
+*.sqlite3
+
+# Local ONNX model files — mount via volume or download at startup (see startup.py)
+models/
+
+# Alembic SQLite state
+backend.db
+
+# IDE / OS artifacts
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+.pytest_cache/
+htmlcov/
+.coverage
