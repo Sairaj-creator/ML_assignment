@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from ..schemas.predict import PredictRequest, PredictResponse
 from ..services.image_service import decode_base64, apply_blur, encode_base64
-from ..ml.detector import detector_instance
+from ..ml.detector import predict as run_detection
 from ..models import User
 from ..core.security import get_current_user
 
@@ -16,7 +16,7 @@ async def predict_image(
     image = decode_base64(req.image_b64)
     h, w = image.shape[:2]
 
-    detections, inference_ms = detector_instance.predict(
+    detections, inference_ms = run_detection(
         image=image,
         variant=req.model_variant,
         conf_threshold=req.confidence_threshold,

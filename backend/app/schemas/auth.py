@@ -1,5 +1,12 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+
+class UserInfo(BaseModel):
+    id: int
+    email: str
+    full_name: str = Field(validation_alias="full_name", serialization_alias="fullName")
+    role: str
+
+    model_config = {"from_attributes": True, "populate_by_name": True}
 
 class SignupRequest(BaseModel):
     email: EmailStr
@@ -13,13 +20,6 @@ class LoginRequest(BaseModel):
 class SignupResponse(BaseModel):
     user_id: str
     email: str
+    user: UserInfo
     access_token: str
     token_type: str = "bearer"
-
-class UserInfo(BaseModel):
-    id: int
-    email: str
-    full_name: str
-    role: str
-
-    model_config = {"from_attributes": True}

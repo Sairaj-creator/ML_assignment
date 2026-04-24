@@ -7,10 +7,13 @@ from prometheus_fastapi_instrumentator import Instrumentator
 
 from .config import settings
 from .api import api_router
+from .database import init_db, SessionLocal
 from .core.exceptions import AppException, app_exception_handler
 from .core.logging_config import setup_logging
 from .middleware.request_id import RequestIDMiddleware
 from .middleware.rate_limit import setup_rate_limiting
+from .models import User
+from .services.auth_service import hash_password
 
 logger = logging.getLogger("uvicorn")
 
@@ -18,9 +21,47 @@ logger = logging.getLogger("uvicorn")
 _START_TIME = time.time()
 
 
+def ensure_demo_users() -> None:
+    """Seed local demo users so a fresh dev database can authenticate immediately."""
+    if not settings.DEBUG:
+        return
+
+    db = SessionLocal()
+    try:
+        demo_users = [
+            ("demo@edgeai.com", "Demo User", "user"),
+            ("admin@edgeai.com", "Admin User", "admin"),
+        ]
+        created_any = False
+        for email, full_name, role in demo_users:
+            existing = db.query(User).filter(User.email == email).first()
+            if existing:
+                existing.full_name = full_name
+                existing.role = role
+                existing.hashed_password = hash_password("local-demo-only")
+                created_any = True
+                continue
+            db.add(
+                User(
+                    email=email,
+                    hashed_password=hash_password("local-demo-only"),
+                    full_name=full_name,
+                    role=role,
+                )
+            )
+            created_any = True
+        if created_any:
+            db.commit()
+            logger.info("Seeded local demo users")
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging()
+    init_db()
+    ensure_demo_users()
     # C8 FIX: wire preload_all() — gracefully warns on missing ONNX files
     from app.ml.registry import preload_all
     try:
@@ -69,8 +110,8 @@ app.include_router(api_router, prefix="/api")
 
 @app.get("/health", tags=["Health"])
 def health_check():
-    from app.ml.registry import _SESSIONS, VARIANT_PATHS
-    loaded_variants = list(_SESSIONS.keys())
+    from app.ml.registry import _MODELS, VARIANT_PATHS
+    loaded_variants = list(_MODELS.keys())
     model_loaded = settings.MOCK_INFERENCE or len(loaded_variants) > 0
     return {
         "status": "healthy",
