@@ -31,4 +31,7 @@ def get_new_db():
 
 
 def init_db():
+    # Import models before create_all so SQLAlchemy metadata is populated.
+    from . import models  # noqa: F401
+
     Base.metadata.create_all(bind=engine)

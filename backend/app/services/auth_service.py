@@ -3,13 +3,21 @@ from datetime import datetime, timedelta
 from jose import jwt
 from ..config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Use a pure-passlib default scheme so local startup isn't blocked by
+# bcrypt backend incompatibilities on newer Python/Windows setups.
+pwd_context = CryptContext(
+    schemes=["pbkdf2_sha256"],
+    deprecated="auto",
+)
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    try:
+        return pwd_context.verify(plain, hashed)
+    except Exception:
+        return False
 
 def create_access_token(user_id: int, role: str = "user") -> str:
     payload = {
